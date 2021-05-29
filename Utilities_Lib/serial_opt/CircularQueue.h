@@ -22,6 +22,19 @@
 #include <QObject>
 /** Private defines ----------------------------------------------------------*/
 
+QT_BEGIN_NAMESPACE
+
+#ifndef QT_STATIC
+#  if defined(UTILITIES_LIBRARY)
+#    define USER_CIRCULARQUEUE_EXPORT Q_DECL_EXPORT
+#  else
+#    define USER_CIRCULARQUEUE_EXPORT Q_DECL_IMPORT
+#  endif
+#else
+#  define USER_CIRCULARQUEUE_EXPORT
+#endif
+
+QT_END_NAMESPACE
 /** Exported typedefines -----------------------------------------------------*/
 /** Exported constants -------------------------------------------------------*/
 
@@ -35,7 +48,7 @@
 /**
  * @brief The CircularQueue class
  */
-class CircularQueue : public QObject
+class USER_CIRCULARQUEUE_EXPORT CircularQueue : public QObject
 {
     Q_OBJECT
 public:
@@ -143,10 +156,7 @@ public:
     static uint32_t CQ_32getData(CQ_handleTypeDef *CircularQueue, uint32_t *targetBuf, uint32_t len);
 
     /*获取CQ_句柄*/
-    CQ_handleTypeDef *get_cq_handle()
-    {
-        return CQ_Handle;
-    }
+    CQ_handleTypeDef *get_cq_handle();
 private:
     CQ_handleTypeDef *CQ_Handle = nullptr;
 };

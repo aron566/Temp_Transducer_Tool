@@ -30,9 +30,19 @@
 #include <QtWidgets/QWidget>
 #include <qcustomplot/qcustomplot.h>
 
+#ifndef QT_STATIC
+#  if defined(UTILITIES_LIBRARY)
+#    define USER_UI_SERIAL_PORT_PLOTTER_EXPORT Q_DECL_EXPORT
+#  else
+#    define USER_UI_SERIAL_PORT_PLOTTER_EXPORT Q_DECL_IMPORT
+#  endif
+#else
+#  define USER_UI_SERIAL_PORT_PLOTTER_EXPORT
+#endif
+
 QT_BEGIN_NAMESPACE
 
-class Ui_serial_port_plotter
+class USER_UI_SERIAL_PORT_PLOTTER_EXPORT Ui_serial_port_plotter
 {
 public:
     QAction *actionConnect;

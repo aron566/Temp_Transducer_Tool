@@ -23,12 +23,10 @@
 /** Private defines ----------------------------------------------------------*/
 using namespace std;
 
-#define QT_BUILD_USER_INI_PARSER_LIB
-
 QT_BEGIN_NAMESPACE
 
 #ifndef QT_STATIC
-#  if defined(QT_BUILD_USER_INI_PARSER_LIB)
+#  if defined(UTILITIES_LIBRARY)
 #    define USER_INI_PARSER_EXPORT Q_DECL_EXPORT
 #  else
 #    define USER_INI_PARSER_EXPORT Q_DECL_IMPORT

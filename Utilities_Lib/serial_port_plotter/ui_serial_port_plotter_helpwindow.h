@@ -18,9 +18,19 @@
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QTextEdit>
 
+#ifndef QT_STATIC
+#  if defined(UTILITIES_LIBRARY)
+#    define USER_UI_SERIAL_PORT_PLOTTER_HP_EXPORT Q_DECL_EXPORT
+#  else
+#    define USER_UI_SERIAL_PORT_PLOTTER_HP_EXPORT Q_DECL_IMPORT
+#  endif
+#else
+#  define USER_UI_SERIAL_PORT_PLOTTER_HP_EXPORT
+#endif
+
 QT_BEGIN_NAMESPACE
 
-class Ui_serial_port_plotter_HelpWindow
+class USER_UI_SERIAL_PORT_PLOTTER_HP_EXPORT Ui_serial_port_plotter_HelpWindow
 {
 public:
     QGridLayout *gridLayout;

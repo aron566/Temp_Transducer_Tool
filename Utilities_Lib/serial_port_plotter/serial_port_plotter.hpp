@@ -23,7 +23,6 @@
 #include <QtSerialPort/QtSerialPort>
 #include <QSerialPortInfo>
 #include "serial_port_plotter_helpwindow.hpp"
-#include "ui_serial_port_plotter.h"
 #include "qcustomplot/qcustomplot.h"
 /** Private defines ----------------------------------------------------------*/
 #define START_MSG       '$'
@@ -40,11 +39,11 @@
 /** Exported constants -------------------------------------------------------*/
 
 /** Exported macros-----------------------------------------------------------*/
-#define QT_BUILD_SERIAL_PORT_PLOTTER_LIB
+
 QT_BEGIN_NAMESPACE
 
 #ifndef QT_STATIC
-#  if defined(QT_BUILD_SERIAL_PORT_PLOTTER_LIB)
+#  if defined(UTILITIES_LIBRARY)
 #    define SERIAL_PORT_PLOTTER_EXPORT Q_DECL_EXPORT
 #  else
 #    define SERIAL_PORT_PLOTTER_EXPORT Q_DECL_IMPORT

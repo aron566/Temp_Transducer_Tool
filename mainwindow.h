@@ -21,6 +21,7 @@
 /** Private includes ---------------------------------------------------------*/
 #include <QMainWindow>
 #include <utilities.h>
+#include <modbus_mode.h>
 /** Private defines ----------------------------------------------------------*/
 
 /** Exported typedefines -----------------------------------------------------*/
@@ -43,7 +44,17 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private:
+    /**
+     * @brief serial_opt_init
+     */
+    void serial_opt_init();
 private slots:
+    /**
+     * @brief slot_scan_serial_port
+     * @param port_name_list
+     */
+    void slot_scan_serial_port(const QStringList &port_name_list);
     /**
      * @brief on_set_pushButton_clicked
      */
@@ -54,10 +65,19 @@ private slots:
      */
     void on_get_temp_compensation_pushButton_clicked();
 
+    void on_connect_pushButton_clicked();
+
+    void on_rescan_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
     Utilities *Utilities_obj = nullptr;
+
+    modbus_mode *modbus_stack_obj = nullptr;
+private:
+    float temp_hi_set;
+    float temp_low_set;
 };
 
 #endif // MAINWINDOW_H

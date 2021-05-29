@@ -19,11 +19,11 @@
 #include <QtSerialPort/QSerialPortInfo>     ///< 提供系统中存在的串口的信息
 #include <serial_opt/CircularQueue.h>       ///< 环形缓冲区
 /** Private defines ----------------------------------------------------------*/
-#define QT_BUILD_USER_SERIALOPT_LIB
+
 QT_BEGIN_NAMESPACE
 
 #ifndef QT_STATIC
-#  if defined(QT_BUILD_USER_SERIALOPT_LIB)
+#  if defined(UTILITIES_LIBRARY)
 #    define USER_SERIALOPT_EXPORT Q_DECL_EXPORT
 #  else
 #    define USER_SERIALOPT_EXPORT Q_DECL_IMPORT
@@ -65,14 +65,8 @@ public:
      * @brief create_cq_buf
      * @param size
      */
-    void create_cq_buf(CircularQueue::CQ_BUF_SIZE_ENUM_TypeDef size)
-    {
-        CQ_Buf_Obj = new CircularQueue(CircularQueue::DATA_TYPE_Typedef_t::UINT8_DATA_BUF, size);
-        if(CQ_Buf_Obj != nullptr)
-        {
-            have_cq_buf = true;
-        }
-    }
+    void create_cq_buf(CircularQueue::CQ_BUF_SIZE_ENUM_TypeDef size);
+
 signals:
     void signal_scan_serial_port(const QStringList &port_name_list);
     void signal_read_serial_data(const QByteArray &data);
@@ -111,7 +105,8 @@ private:
 
 public:
     CircularQueue *CQ_Buf_Obj = nullptr;/**< 可选建立环形缓冲区*/
-    bool have_cq_buf = false;
+
+    bool have_cq_buf = false;           /**< 缓冲区建立完成*/
 protected:
     QStringList port_name_list;
     QByteArray read_data;
