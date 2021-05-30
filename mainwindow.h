@@ -21,7 +21,7 @@
 /** Private includes ---------------------------------------------------------*/
 #include <QMainWindow>
 #include <utilities.h>
-#include <modbus_mode.h>
+#include <modbus_module.h>
 /** Private defines ----------------------------------------------------------*/
 
 /** Exported typedefines -----------------------------------------------------*/
@@ -74,7 +74,7 @@ private:
 
     Utilities *Utilities_obj = nullptr;
 
-    modbus_mode *modbus_stack_obj = nullptr;
+    modbus_module *modbus_stack_obj = nullptr;
 private:
     float temp_hi_set;
     float temp_low_set;

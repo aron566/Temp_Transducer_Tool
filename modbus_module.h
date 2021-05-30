@@ -34,12 +34,12 @@
 /**
  * @brief The modbus_mode class
  */
-class modbus_mode : public QObject
+class modbus_module : public QObject
 {
     Q_OBJECT
 public:
-    explicit modbus_mode(QObject *parent = nullptr, serial_opt *serial_obj = nullptr);
-    ~modbus_mode();
+    explicit modbus_module(QObject *parent = nullptr, serial_opt *serial_obj = nullptr);
+    ~modbus_module();
 
 private:
     typedef enum
@@ -51,6 +51,7 @@ private:
 
     typedef struct
     {
+        uint8_t id;
         uint8_t cmd;
         uint16_t reg;
         uint16_t reg_num;
@@ -60,6 +61,7 @@ public:
     void modbus_stack_start()
     {
         run_state = true;
+        Timer->start();
     }
     void modbus_stack_stop()
     {
@@ -75,7 +77,7 @@ public:
         cq = cq_handle;
     }
     bool modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, const uint16_t *data);
-    bool modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, uint16_t *rev_buf);
+    bool modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t num);
 
     static uint16_t modbus_crc_cal(uint16_t Data ,uint16_t GenPoly ,uint16_t CrcData);
     /*计算CRC*/
@@ -84,6 +86,28 @@ public:
     static uint16_t modbus_crc_return_with_table(uint8_t *data, uint16_t data_len);
     /*计算CRC16并对比数据包中的CRC，返回结果，数据包含crc计算内容+crc结果，否则可能指针越界访问*/
     static bool modbus_get_crc_result(uint8_t *msg, uint16_t len);
+
+    /**
+      ******************************************************************
+      * @brief   解析16位整形数据
+      * @param   [in]data 完整报文 ，当为NULL时直接返回，非NULL时解析完成后返回
+      * @return  uint16_t
+      * @author  aron566
+      * @version V1.0
+      * @date    2020-12-03
+      ******************************************************************
+      */
+    static uint16_t common_get_modbus_u16_data(uint8_t *data, int start_index)
+    {
+      uint16_t result_u16 = 0;
+      if(data == nullptr)
+      {
+        return result_u16;
+      }
+      result_u16 = (static_cast<uint16_t>(data[start_index])) << 8;
+      result_u16 |= (static_cast<uint16_t>(data[start_index+1]));
+      return result_u16;
+    }
 
 private:
     /**

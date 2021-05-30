@@ -12,11 +12,11 @@ CONFIG += c++11
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    modbus_mode.cpp
+    modbus_module.cpp
 
 HEADERS += \
     mainwindow.h \
-    modbus_mode.h
+    modbus_module.h
 
 FORMS += \
     mainwindow.ui

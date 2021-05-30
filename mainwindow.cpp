@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     Utilities_obj = new Utilities(this->parent());
 
-    modbus_stack_obj = new modbus_mode(this, Utilities_obj->serial_obj);
+    modbus_stack_obj = new modbus_module(this, Utilities_obj->serial_obj);
 
     /*串口初始化*/
     serial_opt_init();

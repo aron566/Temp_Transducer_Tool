@@ -8,12 +8,13 @@
   ******************************************************************************
   */
 /* Header includes -----------------------------------------------------------*/
-#include "modbus_mode.h"
+#include "modbus_module.h"
 #include <QDateTime>
 /* Macro definitions ---------------------------------------------------------*/
 #define RESPONSE_TIMEOUT_MAX    3/**< 超时3s*/
 #define MODBUS_SEND_CMD         0x10
 #define MODBUS_READ_CMD         0x03
+#define MODBUS_FRAME_SIZE_MIN   7
 
 #define GET_U16_HI_BYTE(data)   (static_cast<uint8_t>((data>>8)&0x00FF))/**< 获得u16数据高字节*/
 #define GET_U16_LOW_BYTE(data)  (static_cast<uint8_t>(data&0x00FF))/**< 获得u16数据低字节*/
@@ -83,12 +84,12 @@ static const uint8_t auchCRCLo[] = {
  * @brief modbus_mode::modbus_mode
  * @param parent
  */
-modbus_mode::modbus_mode(QObject *parent, serial_opt *serial_obj) : QObject(parent),
+modbus_module::modbus_module(QObject *parent, serial_opt *serial_obj) : QObject(parent),
     serial_opt_obj(serial_obj)
 {
     Timer = new QTimer(this);
     Timer->setInterval(1);
-    connect(Timer, &QTimer::timeout, this, &modbus_mode::slot_timer_timeout);
+    connect(Timer, &QTimer::timeout, this, &modbus_module::slot_timer_timeout);
 
     send_buf = new uint8_t[256];
     if(send_buf == nullptr)
@@ -106,7 +107,7 @@ modbus_mode::modbus_mode(QObject *parent, serial_opt *serial_obj) : QObject(pare
 //    }
 }
 
-modbus_mode::~modbus_mode()
+modbus_module::~modbus_module()
 {
     delete[] send_buf;
 }
@@ -119,7 +120,7 @@ modbus_mode::~modbus_mode()
  * @param data
  * @return
  */
-bool modbus_mode::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, const uint16_t *data)
+bool modbus_module::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, const uint16_t *data)
 {
     if(send_buf == nullptr || serial_opt_obj == nullptr)
     {
@@ -147,9 +148,14 @@ bool modbus_mode::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t nu
     send_buf[index++] = GET_U16_LOW_BYTE(crc_val);
     send_buf[index++] = GET_U16_HI_BYTE(crc_val);
 
-    serial_opt_obj->write(reinterpret_cast<const char *>(send_buf), static_cast<qint64>(index));
+    if(serial_opt_obj->write(reinterpret_cast<const char *>(send_buf), static_cast<qint64>(index)) < 0)
+    {
+        qDebug() << "modbus send error.";
+        return false;
+    }
 
     WAIT_RESPONSE_DATA_Typedef_t wait;
+    wait.id = slave_id;
     wait.cmd = MODBUS_SEND_CMD;
     wait.reg = reg;
     wait.reg_num = num;
@@ -159,20 +165,44 @@ bool modbus_mode::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t nu
 }
 
 /**
- * @brief modbus_mode::modbus_read_data_m
+ * @brief modbus_module::modbus_read_data_m
  * @param slave_id
  * @param reg
  * @param num
- * @param rev_buf
  * @return
  */
-bool modbus_mode::modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, uint16_t *rev_buf)
+bool modbus_module::modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t num)
 {
-    if(send_buf == nullptr)
+    if(send_buf == nullptr || serial_opt_obj == nullptr)
     {
         return false;
     }
+    uint16_t index = 0;
 
+    send_buf[index++] = slave_id;
+    send_buf[index++] = MODBUS_READ_CMD;
+
+    send_buf[index++] = GET_U16_HI_BYTE(reg);
+    send_buf[index++] = GET_U16_LOW_BYTE(reg);
+    send_buf[index++] = GET_U16_HI_BYTE(num);
+    send_buf[index++] = GET_U16_LOW_BYTE(num);
+
+    uint16_t crc_val = modbus_crc_return_with_table(send_buf, index);
+    send_buf[index++] = GET_U16_LOW_BYTE(crc_val);
+    send_buf[index++] = GET_U16_HI_BYTE(crc_val);
+    if(serial_opt_obj->write(reinterpret_cast<const char *>(send_buf), static_cast<qint64>(index)) < 0)
+    {
+        qDebug() << "modbus read error.";
+        return false;
+    }
+
+    WAIT_RESPONSE_DATA_Typedef_t wait;
+    wait.id = slave_id;
+    wait.cmd = MODBUS_READ_CMD;
+    wait.reg = reg;
+    wait.reg_num = num;
+    wait.start_time = QDateTime::currentSecsSinceEpoch();
+    modbus_wait_list.append(wait);
     return true;
 }
 
@@ -184,7 +214,7 @@ bool modbus_mode::modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t nu
  * @param CrcData
  * @return uint16_t
  */
-uint16_t modbus_mode::modbus_crc_cal(uint16_t Data ,uint16_t GenPoly ,uint16_t CrcData)
+uint16_t modbus_module::modbus_crc_cal(uint16_t Data ,uint16_t GenPoly ,uint16_t CrcData)
 {
   uint16_t TmpI;
   Data *= 2;
@@ -206,7 +236,7 @@ uint16_t modbus_mode::modbus_crc_cal(uint16_t Data ,uint16_t GenPoly ,uint16_t C
  * @param data_len
  * @return uint16_t
  */
-uint16_t modbus_mode::modbus_crc_return(uint8_t *data, uint16_t data_len)
+uint16_t modbus_module::modbus_crc_return(uint8_t *data, uint16_t data_len)
 {
   uint16_t temp;
   uint16_t crc_ret = 0xFFFF;
@@ -224,7 +254,7 @@ uint16_t modbus_mode::modbus_crc_return(uint8_t *data, uint16_t data_len)
  * @param data_len data len
  * @return uint16_t
  */
-uint16_t modbus_mode::modbus_crc_return_with_table(uint8_t *data, uint16_t data_len)
+uint16_t modbus_module::modbus_crc_return_with_table(uint8_t *data, uint16_t data_len)
 {
   uint8_t ucCRCHi = 0xFF;
   uint8_t ucCRCLo = 0xFF;
@@ -248,7 +278,7 @@ uint16_t modbus_mode::modbus_crc_return_with_table(uint8_t *data, uint16_t data_
  * @param len data len
  * @return true ok
  */
-bool modbus_mode::modbus_get_crc_result(uint8_t *msg ,uint16_t len)
+bool modbus_module::modbus_get_crc_result(uint8_t *msg ,uint16_t len)
 {
   uint8_t CRC_value_L,CRC_value_H,CRC_value_L_temp,CRC_value_H_temp;
   uint16_t crc_ret = 0;
@@ -267,33 +297,84 @@ bool modbus_mode::modbus_get_crc_result(uint8_t *msg ,uint16_t len)
   }
 }
 
-modbus_mode::MODBUS_RETUN_RES_Typedef_t modbus_mode::modbus_decode_frame(WAIT_RESPONSE_DATA_Typedef_t &wait)
+modbus_module::MODBUS_RETUN_RES_Typedef_t modbus_module::modbus_decode_frame(WAIT_RESPONSE_DATA_Typedef_t &wait)
 {
+    QCoreApplication::processEvents();
+
+    uint32_t buf_len = 0;
+    while(1)
+    {
+        /*检测超时*/
+        if((QDateTime::currentSecsSinceEpoch() - wait.start_time) > RESPONSE_TIMEOUT_MAX)
+        {
+            serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+            return RES_TIMEOUT;
+        }
+
+        /*检测帧长*/
+        buf_len = serial_opt_obj->CQ_Buf_Obj->CQ_skipInvaildU8Header(cq, wait.id);
+        if(buf_len < MODBUS_FRAME_SIZE_MIN)
+        {
+            continue;
+        }
+
+        /*校验功能码*/
+        uint8_t cmd = serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 1);
+        if(wait.cmd != cmd)
+        {
+            serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+            return RES_ERROR;
+        }
+
+        /*校验寄存器*/
+        uint16_t reg = 0;
+        if(cmd == MODBUS_SEND_CMD)
+        {
+            reg = serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 2);
+        }
+        /*解析*/
+
+
+    }
     if(serial_opt_obj->CQ_Buf_Obj->CQ_isEmpty(cq) == true)
     {
         return RES_ERROR;
     }
-
     return RES_OK;
 }
 
 /**
- * @brief modbus_mode::slot_timer_timeout
+ * @brief modbus_module::slot_timer_timeout
  */
-void modbus_mode::slot_timer_timeout()
+void modbus_module::slot_timer_timeout()
 {
+    if(run_state == false)
+    {
+        Timer->stop();
+        modbus_wait_list.clear();
+        serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+    }
     if(modbus_wait_list.isEmpty() == true)
     {
         return;
     }
-    QCoreApplication::processEvents();
 
     WAIT_RESPONSE_DATA_Typedef_t wait = modbus_wait_list.front();
 
-    while(modbus_wait_list.isEmpty() == false)
+    MODBUS_RETUN_RES_Typedef_t ret = modbus_decode_frame(wait);
+    switch(ret)
     {
-
-
+        case RES_OK:
+            modbus_wait_list.removeFirst();
+            break;
+        case RES_TIMEOUT:
+            modbus_wait_list.removeFirst();
+            break;
+        case RES_ERROR:
+            modbus_wait_list.removeFirst();
+            break;
+        default:
+            break;
     }
 }
 /* ---------------------------- end of file ----------------------------------*/
