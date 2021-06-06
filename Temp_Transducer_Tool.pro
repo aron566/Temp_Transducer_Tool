@@ -15,6 +15,7 @@ SOURCES += \
     modbus_module.cpp
 
 HEADERS += \
+    Utilities_Lib/ini_parser/ini.h \
     mainwindow.h \
     modbus_module.h
 

@@ -14,8 +14,15 @@
 #define RESPONSE_TIMEOUT_MAX    3/**< 超时3s*/
 #define MODBUS_SEND_CMD         0x10
 #define MODBUS_READ_CMD         0x03
-#define MODBUS_FRAME_SIZE_MIN   7
 
+#define MODBUS_FRAME_READ_SIZE_MIN  7/**< 主机读取回复最小帧长*/
+#define MODBUS_FRAME_SEND_SIZE_MIN  8/**< 主机写入回复最小帧长*/
+
+#if MODBUS_FRAME_READ_SIZE_MIN < MODBUS_FRAME_SEND_SIZE_MIN
+    #define MODBUS_FRAME_SIZE_MIN  MODBUS_FRAME_READ_SIZE_MIN
+#else
+    #define MODBUS_FRAME_SIZE_MIN MODBUS_FRAME_SEND_SIZE_MIN
+#endif
 #define GET_U16_HI_BYTE(data)   (static_cast<uint8_t>((data>>8)&0x00FF))/**< 获得u16数据高字节*/
 #define GET_U16_LOW_BYTE(data)  (static_cast<uint8_t>(data&0x00FF))/**< 获得u16数据低字节*/
 /* Type definitions ----------------------------------------------------------*/
@@ -122,7 +129,7 @@ modbus_module::~modbus_module()
  */
 bool modbus_module::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, const uint16_t *data)
 {
-    if(send_buf == nullptr || serial_opt_obj == nullptr)
+    if(send_buf == nullptr || serial_opt_obj == nullptr || run_state == false)
     {
         return false;
     }
@@ -161,6 +168,9 @@ bool modbus_module::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t 
     wait.reg_num = num;
     wait.start_time = QDateTime::currentSecsSinceEpoch();
     modbus_wait_list.append(wait);
+
+    /*即刻解析*/
+    decode_modbus_frame_start();
     return true;
 }
 
@@ -173,10 +183,11 @@ bool modbus_module::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t 
  */
 bool modbus_module::modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t num)
 {
-    if(send_buf == nullptr || serial_opt_obj == nullptr)
+    if(send_buf == nullptr || serial_opt_obj == nullptr || run_state == false)
     {
         return false;
     }
+
     uint16_t index = 0;
 
     send_buf[index++] = slave_id;
@@ -203,6 +214,9 @@ bool modbus_module::modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t 
     wait.reg_num = num;
     wait.start_time = QDateTime::currentSecsSinceEpoch();
     modbus_wait_list.append(wait);
+
+    /*即刻解析*/
+    decode_modbus_frame_start();
     return true;
 }
 
@@ -302,6 +316,7 @@ modbus_module::MODBUS_RETUN_RES_Typedef_t modbus_module::modbus_decode_frame(WAI
     QCoreApplication::processEvents();
 
     uint32_t buf_len = 0;
+
     while(1)
     {
         /*检测超时*/
@@ -326,27 +341,71 @@ modbus_module::MODBUS_RETUN_RES_Typedef_t modbus_module::modbus_decode_frame(WAI
             return RES_ERROR;
         }
 
-        /*校验寄存器*/
-        uint16_t reg = 0;
-        if(cmd == MODBUS_SEND_CMD)
+        switch(cmd)
         {
-            reg = serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 2);
+            case MODBUS_SEND_CMD:
+            {
+                uint16_t reg = 0, reg_num = 0;
+                /*二次校验长度*/
+                if(buf_len < MODBUS_FRAME_SEND_SIZE_MIN)
+                {
+                    continue;
+                }
+
+                /*校验寄存器*/
+                reg = serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 2);
+                reg <<= 8;
+                reg += serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 3);
+                reg_num = serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 4);
+                reg_num <<= 8;
+                reg_num += serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 5);
+                if(reg != wait.reg || reg_num != wait.reg_num)
+                {
+                    serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+                    return RES_ERROR;
+                }
+
+                /*校验CRC*/
+                serial_opt_obj->CQ_Buf_Obj->CQ_ManualGetData(cq, modbus_frame, MODBUS_FRAME_SEND_SIZE_MIN);
+                serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+                if(modbus_get_crc_result(modbus_frame, MODBUS_FRAME_SEND_SIZE_MIN-2) == false)
+                {
+                    return RES_ERROR;
+                }
+                return RES_SET_OK;
+            }
+            case MODBUS_READ_CMD:
+            {
+                uint8_t data_size = serial_opt_obj->CQ_Buf_Obj->CQ_ManualGet_Offset_Data(cq, 2);
+                uint16_t frame_len = data_size+5;
+                frame_len = frame_len > 256?256:frame_len;
+
+                /*二次校验长度*/
+                if(buf_len < frame_len)
+                {
+                    continue;
+                }
+
+                /*校验CRC*/
+                serial_opt_obj->CQ_Buf_Obj->CQ_ManualGetData(cq, modbus_frame, frame_len);
+                serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+                if(modbus_get_crc_result(modbus_frame, frame_len-2) == false)
+                {
+                    return RES_ERROR;
+                }
+                return RES_READ_OK;
+            }
+            default:
+                serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+                return RES_ERROR;
         }
-        /*解析*/
-
-
     }
-    if(serial_opt_obj->CQ_Buf_Obj->CQ_isEmpty(cq) == true)
-    {
-        return RES_ERROR;
-    }
-    return RES_OK;
 }
 
 /**
- * @brief modbus_module::slot_timer_timeout
+ * @brief modbus_module::decode_modbus_frame_start
  */
-void modbus_module::slot_timer_timeout()
+void modbus_module::decode_modbus_frame_start()
 {
     if(run_state == false)
     {
@@ -364,17 +423,66 @@ void modbus_module::slot_timer_timeout()
     MODBUS_RETUN_RES_Typedef_t ret = modbus_decode_frame(wait);
     switch(ret)
     {
-        case RES_OK:
+        case RES_SET_OK:
+            emit signal_master_modbus_set_ok(wait.id, wait.reg, wait.reg_num);
+            modbus_wait_list.removeFirst();
+            break;
+        case RES_READ_OK:
+            emit signal_master_modbus_read_ok(wait.id, wait.reg, wait.reg_num, modbus_frame+3);
             modbus_wait_list.removeFirst();
             break;
         case RES_TIMEOUT:
+            emit signal_master_modbus_timeout_error();
             modbus_wait_list.removeFirst();
             break;
         case RES_ERROR:
+            emit signal_master_modbus_unknow_error();
             modbus_wait_list.removeFirst();
             break;
         default:
             break;
     }
+}
+
+/**
+ * @brief modbus_module::slot_timer_timeout
+ */
+void modbus_module::slot_timer_timeout()
+{
+//    if(run_state == false)
+//    {
+//        Timer->stop();
+//        modbus_wait_list.clear();
+//        serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+//    }
+//    if(modbus_wait_list.isEmpty() == true)
+//    {
+//        return;
+//    }
+
+//    WAIT_RESPONSE_DATA_Typedef_t wait = modbus_wait_list.front();
+
+//    MODBUS_RETUN_RES_Typedef_t ret = modbus_decode_frame(wait);
+//    switch(ret)
+//    {
+//        case RES_SET_OK:
+//            emit signal_master_modbus_set_ok(wait.id, wait.reg, wait.reg_num);
+//            modbus_wait_list.removeFirst();
+//            break;
+//        case RES_READ_OK:
+//            emit signal_master_modbus_read_ok(wait.id, wait.reg, wait.reg_num, modbus_frame+3);
+//            modbus_wait_list.removeFirst();
+//            break;
+//        case RES_TIMEOUT:
+//            emit signal_master_modbus_timeout_error();
+//            modbus_wait_list.removeFirst();
+//            break;
+//        case RES_ERROR:
+//            emit signal_master_modbus_unknow_error();
+//            modbus_wait_list.removeFirst();
+//            break;
+//        default:
+//            break;
+//    }
 }
 /* ---------------------------- end of file ----------------------------------*/

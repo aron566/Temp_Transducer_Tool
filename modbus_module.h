@@ -29,6 +29,10 @@
 /** Exported constants -------------------------------------------------------*/
 
 /** Exported macros-----------------------------------------------------------*/
+#define REG_REAL_TIME_TEMPERATURE   10004   /**< 实时温度*/
+#define REG_REAL_TIME_HUMIDITY      10006   /**< 实时湿度*/
+#define REG_LOW_TEMP_VALUE          10142   /**< 低温报警*/
+#define REG_HI_TEMP_VALUE           10144   /**< 高温报警*/
 /** Exported variables -------------------------------------------------------*/
 /** Exported functions prototypes --------------------------------------------*/
 /**
@@ -44,7 +48,8 @@ public:
 private:
     typedef enum
     {
-        RES_OK = 0,
+        RES_SET_OK = 0,
+        RES_READ_OK,
         RES_TIMEOUT,
         RES_ERROR
     }MODBUS_RETUN_RES_Typedef_t;
@@ -90,7 +95,7 @@ public:
     /**
       ******************************************************************
       * @brief   解析16位整形数据
-      * @param   [in]data 完整报文 ，当为NULL时直接返回，非NULL时解析完成后返回
+      * @param   [in]data 完整报文 ，当为nullptr时直接返回，非nullptr时解析完成后返回
       * @return  uint16_t
       * @author  aron566
       * @version V1.0
@@ -111,6 +116,11 @@ public:
 
 private:
     /**
+     * @brief decode_modbus_frame_start
+     */
+    void decode_modbus_frame_start();
+
+    /**
      * @brief modbus_decode_frame
      * @return
      */
@@ -126,9 +136,35 @@ private:
 
     QList<WAIT_RESPONSE_DATA_Typedef_t> modbus_wait_list;
 signals:
+    /**
+     * @brief signal_master_modbus_set_ok
+     * @param slave_id
+     * @param reg_addr
+     * @param reg_num
+     */
+    void signal_master_modbus_set_ok(uint8_t slave_id, uint16_t reg_addr, uint16_t reg_num);
 
+    /**
+     * @brief signal_master_modbus_read_ok
+     * @param slave_id
+     * @param reg_addr
+     * @param reg_num
+     * @param modbus_frame
+     */
+    void signal_master_modbus_read_ok(uint8_t slave_id, uint16_t reg_addr, uint16_t reg_num, uint8_t *modbus_frame);
+
+    /**
+     * @brief signal_master_modbus_timeout_error
+     */
+    void signal_master_modbus_timeout_error();
+
+    /**
+     * @brief signal_master_modbus_unknow_error
+     */
+    void signal_master_modbus_unknow_error();
 public:
     bool run_state = false;
+    uint8_t modbus_frame[256];
 private slots:
     /**
      * @brief slot_timer_timeout

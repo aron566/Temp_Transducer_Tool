@@ -15,7 +15,7 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
-    <item row="0" column="0">
+    <item row="0" column="0" colspan="2">
      <widget class="QLabel" name="label">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -28,14 +28,14 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="0">
+    <item row="1" column="0" colspan="2">
      <widget class="Line" name="line">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
+    <item row="2" column="0" colspan="2">
      <widget class="QGroupBox" name="groupBox_5">
       <property name="title">
        <string>通讯设置</string>
@@ -105,7 +105,7 @@
       </layout>
      </widget>
     </item>
-    <item row="3" column="0">
+    <item row="3" column="0" colspan="2">
      <widget class="QGroupBox" name="groupBox">
       <property name="title">
        <string>实时数据</string>
@@ -163,7 +163,7 @@
       </layout>
      </widget>
     </item>
-    <item row="4" column="0">
+    <item row="4" column="0" colspan="2">
      <widget class="QGroupBox" name="groupBox_2">
       <property name="title">
        <string>参数设置</string>
@@ -210,6 +210,13 @@
      </widget>
     </item>
     <item row="5" column="0">
+     <widget class="QCheckBox" name="down_par_checkBox">
+      <property name="text">
+       <string>勾选则允许下发参数</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="1">
      <widget class="QPushButton" name="set_pushButton">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
