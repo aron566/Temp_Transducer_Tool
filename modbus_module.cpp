@@ -104,14 +104,6 @@ modbus_module::modbus_module(QObject *parent, serial_opt *serial_obj) : QObject(
         qDebug() << "modbus init error.";
         return;
     }
-
-    /*建立环形缓冲区*/
-//    serial_opt_obj->create_cq_buf(CircularQueue::CQ_BUF_2K);
-//    cq = serial_opt_obj->CQ_Buf_Obj->get_cq_handle();
-//    if(cq == nullptr)
-//    {
-//        qDebug() << "cq is null error";
-//    }
 }
 
 modbus_module::~modbus_module()
@@ -442,6 +434,7 @@ void modbus_module::decode_modbus_frame_start()
         default:
             break;
     }
+    serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
 }
 
 /**
