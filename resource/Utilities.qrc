@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/Temp_Transducer_Tool">
-        <file>icons/Utilities_icon.icns</file>
+        <file>icons/Temp_Transducer_Tool.icns</file>
         <file>styles/style.qss</file>
         <file alias="play_dis.png">icons/lynny-2x/Play.png</file>
         <file alias="pause_dis.png">icons/lynny-2x/Pause.png</file>

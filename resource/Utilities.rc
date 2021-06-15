@@ -12,10 +12,10 @@
 #define VER_LEGALCOPYRIGHT_STR      "Copyright (c) 2021 aron566."
 #define VER_LEGALTRADEMARKS1_STR    "All Rights Reserved"
 #define VER_LEGALTRADEMARKS2_STR    VER_LEGALTRADEMARKS1_STR
-#define VER_ORIGINALFILENAME_STR    "aron566.exe"
-#define VER_PRODUCTNAME_STR         "aron566"
+#define VER_ORIGINALFILENAME_STR    "Temp_Transducer_Tool.exe"
+#define VER_PRODUCTNAME_STR         "Temp_Transducer_Tool"
 
-#define VER_COMPANYDOMAIN_STR       "github.com/aron566/C_TOOL"
+#define VER_COMPANYDOMAIN_STR       "github.com/aron566/Temp_Transducer_Tool"
 
 #ifndef DEBUG
 #define VER_DEBUG 0
@@ -25,7 +25,7 @@
 
 IDI_ICON1 ICON DISCARDABLE "icons/exe_icon.ico"
 
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "aron566.exe.manifest"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "Temp_Transducer_Tool.exe.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     VER_FILEVERSION

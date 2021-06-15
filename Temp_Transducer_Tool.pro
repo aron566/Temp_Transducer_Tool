@@ -35,6 +35,8 @@ RESOURCES += \
     resource/Utilities.qrc \
     resource/qdarkstyle/dark/style.qrc
 
+RC_FILE = resource/Utilities.rc
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
