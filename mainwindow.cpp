@@ -30,6 +30,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->setWindowTitle("Temp Transducer");
 
+    /* Apply style sheet */
+    QFile file(":/Temp_Transducer_Tool/styles/style.qss");
+    if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        this->setStyleSheet(file.readAll());
+        file.close();
+    }
+
     Utilities_obj = new Utilities(this->parent());
 
     /*modbus协议栈初始化*/

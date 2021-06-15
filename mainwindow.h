@@ -25,7 +25,7 @@
 #include <modbus_module.h>
 
 //#define MINI_CASE_SENSITIVE /**< 检查ini文件内大小写*/
-#include "ini.h"
+#include "Utilities_Lib/ini_parser/ini.h"
 /** Private defines ----------------------------------------------------------*/
 
 /** Exported typedefines -----------------------------------------------------*/
