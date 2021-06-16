@@ -236,10 +236,18 @@ void MainWindow::on_connect_pushButton_clicked()
     if(Utilities_obj->serial_obj->connect_state == true)
     {
         ui->connect_pushButton->setText("断开");
+        Timer->start();
+        if(ui->down_par_checkBox->isChecked() == true)
+        {
+            return;
+        }
+        modbus_stack_obj->modbus_stack_start();
     }
     else
     {
         ui->connect_pushButton->setText("连接");
+        Timer->stop();
+        modbus_stack_obj->modbus_stack_stop();
     }
 }
 
@@ -267,12 +275,14 @@ void MainWindow::on_rescan_pushButton_clicked()
 void MainWindow::on_down_par_checkBox_clicked(bool checked)
 {
     ui->set_pushButton->setVisible(checked);
-    if(checked == false)
+    if(checked == true)
     {
+       qDebug() << "modbus stop";
        modbus_stack_obj->modbus_stack_stop();
     }
     else
     {
+        qDebug() << "modbus start";
         modbus_stack_obj->modbus_stack_start();
     }
 }

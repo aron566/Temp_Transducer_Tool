@@ -121,10 +121,16 @@ modbus_module::~modbus_module()
  */
 bool modbus_module::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t num, const uint16_t *data)
 {
-    if(send_buf == nullptr || serial_opt_obj == nullptr || run_state == false)
+    if(send_buf == nullptr || serial_opt_obj == nullptr)
     {
         return false;
     }
+
+    if(serial_opt_obj->connect_state == false)
+    {
+        return false;
+    }
+
     uint16_t index = 0;
 
     send_buf[index++] = slave_id;
@@ -176,6 +182,11 @@ bool modbus_module::modbus_send_data_m(uint8_t slave_id, uint16_t reg, uint16_t 
 bool modbus_module::modbus_read_data_m(uint8_t slave_id, uint16_t reg, uint16_t num)
 {
     if(send_buf == nullptr || serial_opt_obj == nullptr || run_state == false)
+    {
+        return false;
+    }
+
+    if(serial_opt_obj->connect_state == false)
     {
         return false;
     }
@@ -305,12 +316,12 @@ bool modbus_module::modbus_get_crc_result(uint8_t *msg ,uint16_t len)
 
 modbus_module::MODBUS_RETUN_RES_Typedef_t modbus_module::modbus_decode_frame(WAIT_RESPONSE_DATA_Typedef_t &wait)
 {
-    QCoreApplication::processEvents();
-
     uint32_t buf_len = 0;
 
     while(1)
     {
+        QCoreApplication::processEvents();
+
         /*检测超时*/
         if((QDateTime::currentSecsSinceEpoch() - wait.start_time) > RESPONSE_TIMEOUT_MAX)
         {
@@ -399,12 +410,6 @@ modbus_module::MODBUS_RETUN_RES_Typedef_t modbus_module::modbus_decode_frame(WAI
  */
 void modbus_module::decode_modbus_frame_start()
 {
-    if(run_state == false)
-    {
-        Timer->stop();
-        modbus_wait_list.clear();
-        serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
-    }
     if(modbus_wait_list.isEmpty() == true)
     {
         return;
@@ -435,6 +440,12 @@ void modbus_module::decode_modbus_frame_start()
             break;
     }
     serial_opt_obj->CQ_Buf_Obj->CQ_emptyData(cq);
+
+    if(run_state == false)
+    {
+        Timer->stop();
+        modbus_wait_list.clear();
+    }
 }
 
 /**
