@@ -365,7 +365,7 @@ void MainWindow::update_humidity(const uint8_t *data)
     temp |= data[3];
     float humidity_value;
     memmove(&humidity_value, &temp, sizeof(int));
-    ui->temp_lineEdit->setText(QString("%1").arg(humidity_value));
+    ui->humity_lineEdit->setText(QString("%1").arg(humidity_value));
 }
 
 /**
@@ -382,7 +382,7 @@ void MainWindow::update_hi_temp(const uint8_t *data)
     temp <<= 8;
     temp |= data[3];
     float temp_value = temp/1000;
-    ui->temp_lineEdit->setText(QString("%1").arg(temp_value));
+    ui->hi_temp_lineEdit->setText(QString("%1").arg(temp_value));
 }
 
 /**
@@ -399,7 +399,7 @@ void MainWindow::update_low_temp(const uint8_t *data)
     temp <<= 8;
     temp |= data[3];
     float temp_value = temp/1000;
-    ui->temp_lineEdit->setText(QString("%1").arg(temp_value));
+    ui->low_temp_lineEdit->setText(QString("%1").arg(temp_value));
 }
 
 /**
