@@ -138,7 +138,7 @@ void MainWindow::on_set_pushButton_clicked()
     if(ui->low_temp_lineEdit->text().toFloat() > temp_low_set || ui->low_temp_lineEdit->text().toFloat() < temp_low_set)
     {
         temp_low_set = ui->low_temp_lineEdit->text().toFloat();
-        int temp_low_set_int = temp_hi_set*1000;
+        int temp_low_set_int = temp_low_set*1000;
         send_buf[0] = static_cast<uint16_t>(((temp_low_set_int >> 16)&0xFFFF));
         send_buf[1] = static_cast<uint16_t>((temp_low_set_int&0xFFFF));
         modbus_stack_obj->modbus_send_data_m(1, REG_LOW_TEMP_VALUE, 2, send_buf);
